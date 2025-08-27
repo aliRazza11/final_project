@@ -121,7 +121,7 @@ export default function Dashboard() {
     },
   });
 
-  // Image switching / upload / delete moved out
+  // Image switching / upload / delete
   const { switchToImage } = useImageSwitch({
     wsRef,
     setStreamError,
@@ -165,17 +165,16 @@ export default function Dashboard() {
 
   const canDiffuse = Boolean(uploadedImageDataUrl);
 
-  // Preload from router state
+  // Preload
   useEffect(() => {
     if (!preloaded) return;
     (async () => {
       const key = preloaded.id || `preloaded:${preloaded.url?.slice(0, 64)}`;
       await switchToImage(key, preloaded.url, preloaded.url);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preloaded]);
 
-  // Cleanup WS on unmount
+  // Cleanup WS
   useEffect(
     () => () => {
       try {
@@ -192,7 +191,6 @@ export default function Dashboard() {
     if (f?.image) setDiffusedImage(f.image);
   }, [scrubT, frames, setDiffusedImage]);
 
-  // small local handlers that are still readable
   const handleSelectFromSidebar = useCallback(
     (item) => {
       const ui = toUiImage(item);
@@ -231,7 +229,6 @@ export default function Dashboard() {
   }, [navigate]);
 
   return (
-    // 🔽 your full existing JSX return stays here unchanged 🔽
     <div className="h-screen w-screen overflow-hidden bg-gray-100 text-gray-900">
       {/* Sidebar */}
       <Sidebar
@@ -247,41 +244,38 @@ export default function Dashboard() {
         onLogout={handleLogout}
       />
 
-      {/* Main content */}
+      {/* Main */}
       <div
         className="flex flex-col overflow-y-auto h-screen"
         style={{ marginLeft: collapsed ? "4rem" : "16rem" }}
       >
-        <main className="flex flex-col">
+        <main className="flex flex-col justify-center items-center">
           {!uploadedImage ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-6">
-              <label className="flex flex-col items-center justify-center w-full max-w-lg h-64 border-2 border-dashed border-gray-400 rounded-2xl cursor-pointer bg-gray-50 hover:bg-gray-100">
+            <div className="flex-1 flex flex-col items-center justify-center min-h-screen w-2/3">
+              {/* Upload Box */}
+              <div className="flex flex-col items-center justify-center w-full max-w-lg h-72 border-2 border-dashed border-gray-400 rounded-2xl bg-gray-50 hover:bg-gray-100 p-6">
                 <UploadButton onSelect={handleUpload} label="Choose File" />
-                <p className="mt-3 text-sm text-gray-500">
-                  Drag & drop an image here, or click to select
-                </p>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => handleUpload(e.target.files[0])}
                   className="hidden"
                 />
-              </label>
-
-              <div className="mt-4 flex items-center gap-3">
                 <button
                   onClick={openMnistSelector}
-                  className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-bold hover:bg-gray-800"
+                  className="mt-4 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-bold hover:bg-gray-800"
                 >
                   Choose MNIST Digit
                 </button>
-                <button
-                  onClick={refreshHistory}
-                  className="text-sm text-gray-600 underline hover:no-underline"
-                >
-                  Refresh history
-                </button>
               </div>
+
+              {/* Refresh History */}
+              <button
+                onClick={refreshHistory}
+                className="mt-6 text-sm text-gray-600 underline hover:no-underline"
+              >
+                Refresh history
+              </button>
             </div>
           ) : (
             <>
@@ -351,7 +345,7 @@ export default function Dashboard() {
               </div>
 
               {/* Controls */}
-              <div className="bottom-0 bg-white border-t p-6">
+              <div className="bottom-0 bg-white border-t p-6 w-full">
                 <Controls
                   diffusion={diffusion}
                   setDiffusion={setDiffusion}
@@ -388,11 +382,7 @@ export default function Dashboard() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Timeline & Analysis</h2>
               <button
-                onClick={() => {
-                  setShowAnalysis(false);
-                  setFollowStream(true);
-                  setScrubT(null);
-                }}
+                onClick={handleCloseAnalysis}
                 className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
               >
                 Close
@@ -420,14 +410,11 @@ export default function Dashboard() {
             <TimelineStrip
               frames={frames}
               scrubT={scrubT}
-              setScrubT={(t) => {
-                setScrubT(t);
-                if (t != null) setFollowStream(false);
-              }}
+              setScrubT={handleSetScrubT}
               timelineRef={timelineRef}
               rememberScroll={rememberScroll}
               restoreScroll={restoreScroll}
-              onCenterClick={(e) => centerThumb(e, timelineRef, timelineScrollRef)}
+              onCenterClick={onCenterThumb}
             />
 
             {/* Charts */}

@@ -15,7 +15,7 @@ export default function useDiffusionStream({ api }) {
 
   const fastDiffuse = useCallback(async ({
     uploadedImageDataUrl, diffusion,
-    setDiffusedImage, setProgress, setCurrentStep
+    setDiffusedImage, setCurrentStep
   }) => {
     const steps = clamp(Number(diffusion.steps) || 1, 1, 1000);
     const payload = {
@@ -29,7 +29,7 @@ export default function useDiffusionStream({ api }) {
     };
     const data = await api.diffuse(payload);
     setDiffusedImage(data.image);
-    setProgress(1);
+    // setProgress(1);
     setCurrentStep(steps - 1);
   }, [api]);
 
