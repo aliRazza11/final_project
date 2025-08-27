@@ -1,0 +1,13 @@
+.swiper-button-next::after,
+.swiper-button-prev::after {
+  color: white; /* this actually changes the arrow color */
+  font-size: 2rem; /* optional: make them bigger */
+}
+
+/* .swiper-button-next {
+  margin-right: -12px;
+}
+
+.swiper-button-prev {
+  margin-left: -12px;
+} */
