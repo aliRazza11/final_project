@@ -7,7 +7,6 @@ import { useCallback } from "react";
 export default function useDeleteImage({
   api,
   currentImageKey,
-  deleteFramesForImage,
   switchToImage,
   removeById,
   refreshHistory,
@@ -20,10 +19,6 @@ export default function useDeleteImage({
       if (!selectedForDelete) return;
       const id = selectedForDelete.id;
 
-      if (currentImageKey === id) {
-        await deleteFramesForImage(id);
-        await switchToImage(null, null, null);
-      }
 
       // optimistic removal
       removeById(id);
@@ -42,7 +37,6 @@ export default function useDeleteImage({
     [
       api,
       currentImageKey,
-      deleteFramesForImage,
       switchToImage,
       removeById,
       refreshHistory,

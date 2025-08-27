@@ -29,14 +29,13 @@ export default function useDiffusionStream({ api }) {
     };
     const data = await api.diffuse(payload);
     setDiffusedImage(data.image);
-    // setProgress(1);
     setCurrentStep(steps - 1);
   }, [api]);
 
   const slowDiffuse = useCallback(({
-    uploadedImageDataUrl, diffusion,
+    uploadedImageDataUrl, diffusion, imageId,
     onStart, onFrame, onProgress, onDone, onError,
-    tOffset
+    tOffset, saveFramesForImage
   }) => {
     closeWsIfOpen();
 
@@ -45,6 +44,8 @@ export default function useDiffusionStream({ api }) {
     const WS_URL = BASE_HTTP.replace(/^http/, "ws") + "/diffuse/ws";
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
+
+    let collectedFrames = [];
 
     ws.onopen = () => {
       const previewEvery = Math.max(1, Math.floor(steps / 25));
@@ -68,16 +69,23 @@ export default function useDiffusionStream({ api }) {
         const msg = JSON.parse(ev.data);
         if (typeof msg.t === "number") {
           const globalT = msg.t + (tOffset || 0);
-          onFrame?.({
-            localT: msg.t, globalT,
+          const frame = {
+            localT: msg.t,
+            globalT,
             image: msg.image || null,
             metrics: msg.metrics || null,
             betas: msg.beta,
-          });
+          };
+          collectedFrames.push(frame);
+          onFrame?.(frame);
           if (typeof msg.progress === "number")
             onProgress?.(msg.progress, msg.t);
         }
         if (msg.status === "done") {
+          // Persist all frames once the run completes
+          if (imageId && saveFramesForImage) {
+            saveFramesForImage(imageId, collectedFrames);
+          }
           onDone?.();
           ws.close();
         }

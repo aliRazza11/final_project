@@ -58,7 +58,6 @@ export default function Dashboard() {
     timelineScrollRef,
     saveFramesForImage,
     loadFramesForImage,
-    deleteFramesForImage,
     rememberScroll,
     restoreScroll,
     computeNextOffsetFrom,
@@ -91,7 +90,6 @@ export default function Dashboard() {
     frames,
     setFrames,
     saveFramesForImage,
-    deleteFramesForImage,
     tOffsetRef,
   });
 
@@ -154,7 +152,6 @@ export default function Dashboard() {
   const { confirmDelete } = useDeleteImage({
     api,
     currentImageKey,
-    deleteFramesForImage,
     switchToImage,
     removeById,
     refreshHistory,

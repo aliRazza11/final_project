@@ -1,20 +1,19 @@
 // src/hooks/useDiffusionOrchestrator.js
 import { useCallback, useMemo, useRef, useState } from "react";
-import useDiffusionStream from "../hooks/useDiffusionStream"; // your existing hook
+import useDiffusionStream from "../hooks/useDiffusionStream";
 import { clamp } from "../utils/image";
 
 /**
- * Owns diffusion config + streaming orchestration for fast/slow modes.
- * Leaves image switching and timeline persistence to the caller.
+ * Orchestrates fast/slow diffusion runs.
+ * Handles timeline reset, streaming state, persistence via /frames API.
  */
 export default function useDiffusionOrchestrator({
-  api, // not used directly, kept for symmetry/extensibility
+  api,
   uploadedImageDataUrl,
-  currentImageKey,
+  currentImageKey,          // should be imageId from backend
   frames,
   setFrames,
-  saveFramesForImage,
-  deleteFramesForImage,
+  saveFramesForImage,       // calls POST /frames/:imageId
   tOffsetRef,
 }) {
   // Diffusion config + view
@@ -31,10 +30,9 @@ export default function useDiffusionOrchestrator({
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [streamError, setStreamError] = useState("");
-
   const [followStream, setFollowStream] = useState(true);
 
-  // Attach to existing WS/REST streamer
+  // Attach to WS/REST streamer
   const { fastDiffuse, slowDiffuse, cancel: cancelStream, wsRef } = useDiffusionStream({ api });
 
   const totalSteps = useMemo(
@@ -50,17 +48,12 @@ export default function useDiffusionOrchestrator({
         wsRef.current.close();
       }
     } catch {}
-
-    if (currentImageKey) {
-      await deleteFramesForImage(currentImageKey);
-    }
-
     setFrames([]);
     setCurrentStep(0);
     setDiffusedImage(null);
     tOffsetRef.current = 0;
     setFollowStream(true);
-  }, [currentImageKey, deleteFramesForImage, setFrames, tOffsetRef, wsRef]);
+  }, [currentImageKey, , setFrames, tOffsetRef, wsRef]);
 
   const diffuse = useCallback(async () => {
     if (!canDiffuse) {
@@ -81,7 +74,7 @@ export default function useDiffusionOrchestrator({
       return;
     }
 
-    // Slow (WS)
+    // --- Slow (WebSocket) ---
     await resetTimelineForActiveImage();
 
     setStreamError("");
@@ -94,7 +87,9 @@ export default function useDiffusionOrchestrator({
     slowDiffuse({
       uploadedImageDataUrl,
       diffusion,
+      imageId: currentImageKey,       // ✅ pass DB id
       tOffset: nextOffset,
+      saveFramesForImage,             // ✅ backend persistence
       onStart: () => {},
       onFrame: async (frame) => {
         if (!frame.image) return;
@@ -105,8 +100,6 @@ export default function useDiffusionOrchestrator({
             idx >= 0
               ? prev.map((p, i) => (i === idx ? frame : p))
               : [...prev, frame].sort((a, b) => a.globalT - b.globalT);
-
-        if (currentImageKey) saveFramesForImage(currentImageKey, next);
           return next;
         });
 
@@ -156,7 +149,7 @@ export default function useDiffusionOrchestrator({
     diffuse,
     cancelStream,
 
-    // ws handle (for page-level cleanup or image switch)
+    // ws handle
     wsRef,
   };
 }

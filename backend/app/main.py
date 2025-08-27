@@ -4,7 +4,7 @@ from app.core.config import settings
 from app.routers import auth
 from app.db.session import engine
 from sqlalchemy import text
-from app.routers import image_router, diffusion_router, settings_router
+from app.routers import image_router, diffusion_router, settings_router, frame_router
 import sys
 import asyncio
 import logging
@@ -24,6 +24,8 @@ add_cors(app)
 
 app.include_router(auth.router)
 app.include_router(diffusion_router.router)
+app.include_router(frame_router.router)
+
 app.include_router(settings_router.router)
 
 

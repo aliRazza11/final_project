@@ -1,8 +1,8 @@
 // src/hooks/usePerImageTimeline.js
 import { useRef, useState, useLayoutEffect, useCallback } from "react";
-import { set, get, del } from "idb-keyval";
+import axios from "axios";
 
-export default function usePerImageTimeline() {
+export default function usePerImageTimeline(apiBase = "http://localhost:8000") {
   const [frames, setFrames] = useState([]);
   const [scrubT, setScrubT] = useState(null);
 
@@ -11,50 +11,41 @@ export default function usePerImageTimeline() {
   const timelineRef = useRef(null);
   const timelineScrollRef = useRef(0);
 
-  // Use a cleaner naming scheme: "timeline:<imageId>"
-  const dbKey = useCallback((imageId) => `timeline:${imageId}`, []);
-
+  // --- API helpers ---
   const saveFramesForImage = useCallback(
     async (imageId, framesArr) => {
       if (!imageId) return;
-      framesByImageRef.current.set(imageId, framesArr);
       try {
-        await set(dbKey(imageId), framesArr);
+        await axios.post(`${apiBase}/frames/${imageId}`, framesArr, {
+          withCredentials: true, // keep cookies for auth
+        });
+        framesByImageRef.current.set(imageId, framesArr);
       } catch (err) {
-        console.error("Failed to save frames in IndexedDB:", err);
+        console.error("Failed to save frames to server:", err);
       }
     },
-    [dbKey]
+    [apiBase]
   );
 
   const loadFramesForImage = useCallback(
     async (imageId) => {
       if (!imageId) return [];
-      const mem = framesByImageRef.current.get(imageId);
-      if (mem) return mem;
       try {
-        const fromDb = await get(dbKey(imageId));
-        return fromDb || [];
+        const { data } = await axios.get(`${apiBase}/frames/${imageId}`, {
+          withCredentials: true,
+        });
+        framesByImageRef.current.set(imageId, data);
+        return data;
       } catch (err) {
-        console.error("Failed to load frames from IndexedDB:", err);
+        console.error("Failed to load frames from server:", err);
         return [];
       }
     },
-    [dbKey]
+    [apiBase]
   );
 
-  const deleteFramesForImage = useCallback(
-    async (imageId) => {
-      framesByImageRef.current.delete(imageId);
-      try {
-        await del(dbKey(imageId));
-      } catch (err) {
-        console.error("Failed to delete frames from IndexedDB:", err);
-      }
-    },
-    [dbKey]
-  );
 
+  // --- Scroll state (same as before) ---
   useLayoutEffect(() => {
     const el = timelineRef.current;
     if (el) el.scrollLeft = timelineScrollRef.current;
@@ -85,7 +76,6 @@ export default function usePerImageTimeline() {
     timelineScrollRef,
     saveFramesForImage,
     loadFramesForImage,
-    deleteFramesForImage,
     rememberScroll,
     restoreScroll,
     computeNextOffsetFrom,
