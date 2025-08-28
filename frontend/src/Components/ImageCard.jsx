@@ -7,15 +7,15 @@ export default function ImageCard({ title, src, placeholder = "No image" }) {
       <div className="flex-1 flex items-center justify-center p-2 overflow-hidden">
         {src ? (
           <img
-          src={src}
-          alt={title}
-          className="max-h-full max-w-full object-contain"
-          style={{ width: "800px", height: "600px", imageRendering: "pixelated"}}
+            src={src}
+            alt={title}
+            className="object-contain w-[300px] h-[170px] sm:w-[500px] sm:h-[400px] md:w-[800px] md:h-[600px]"
+            style={{ imageRendering: "pixelated" }}
           />
         ) : (
           <div
-            className="text-gray-400 flex items-center justify-center text-xl"
-            style={{ width: "800px", height: "600px" }}
+            className="text-gray-400 flex items-center justify-center text-xl object-contain 
+                       w-[300px] h-[200px] sm:w-[500px] sm:h-[400px] md:w-[800px] md:h-[600px]"
           >
             {placeholder}
           </div>

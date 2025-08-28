@@ -1,20 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
   const [editingSteps, setEditingSteps] = useState(false);
   const [tempSteps, setTempSteps] = useState(diffusion.steps);
 
+  // Track if fields were touched
+  const [betaMinTouched, setBetaMinTouched] = useState(false);
+  const [betaMaxTouched, setBetaMaxTouched] = useState(false);
+
   // validation ranges from backend schema
-  const betaMinRange = { min: 0.001, max: 0.001 };
+  const betaMinRange = { min: 0.001, max: 0.01 };
   const betaMaxRange = { min: 0.001, max: 0.02 };
 
+  // 🔥 Ensure defaults when component mounts
+  useEffect(() => {
+    setDiffusion((prev) => ({
+      ...prev,
+      betaMin: prev.betaMin ?? betaMinRange.min,
+      betaMax: prev.betaMax ?? betaMaxRange.max,
+      steps: prev.steps ?? 100, // sensible default
+      schedule: prev.schedule ?? "linear",
+    }));
+  }, []);
+
   const isBetaMinValid =
-    diffusion.betaMin >= betaMinRange.min && diffusion.betaMin <= betaMinRange.max;
+    diffusion.betaMin >= betaMinRange.min &&
+    diffusion.betaMin <= betaMinRange.max;
+
   const isBetaMaxValid =
-    diffusion.betaMax >= betaMaxRange.min && diffusion.betaMax <= betaMaxRange.max;
+    diffusion.betaMax >= betaMaxRange.min &&
+    diffusion.betaMax <= betaMaxRange.max;
 
   return (
-    <div className="flex flex-wrap justify-center items-end gap-6 text-center">
+    <div className="flex flex-wrap justify-center items-start gap-4 md:gap-8 lg:gap-16 text-center">
       {/* Mode */}
       <div className="flex flex-col items-center">
         <label className="text-sm font-medium text-gray-700 mb-1">Mode</label>
@@ -31,7 +49,9 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
       {/* Steps */}
       <div className="flex flex-col items-center">
         <label className="text-sm font-medium text-gray-700 mb-1">Steps</label>
-        <div className="flex items-center gap-3">
+
+        {/* Desktop view: slider + inline edit */}
+        <div className="hidden sm:flex items-center gap-3">
           <input
             type="range"
             min="1"
@@ -40,7 +60,7 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
             onChange={(e) =>
               setDiffusion((p) => ({ ...p, steps: Number(e.target.value) }))
             }
-            className="w-48 accent-black"
+            className="w-48 h-9 accent-black"
           />
 
           {editingSteps ? (
@@ -65,11 +85,11 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
                   setEditingSteps(false);
                 }
               }}
-              className="border border-gray-300 rounded px-2 py-1 h-9 w-20 text-center"
+              className="border border-gray-300 rounded px-2 py-0.5 h-7 w-16 text-center"
             />
           ) : (
             <span
-              className="cursor-pointer font-mono text-sm px-2 py-1 h-9 flex items-center border rounded bg-gray-50 hover:bg-gray-100"
+              className="cursor-pointer font-mono text-sm px-2 py-0.5 h-7 flex items-center border rounded bg-gray-50 hover:bg-gray-100"
               onClick={() => {
                 setTempSteps(diffusion.steps);
                 setEditingSteps(true);
@@ -79,7 +99,21 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-500 mt-1">Allowed range: 1 – 1000</p>
+
+        {/* Mobile view: just number input */}
+        <div className="sm:hidden w-24">
+          <input
+            type="number"
+            min="1"
+            max="1000"
+            value={diffusion.steps}
+            onChange={(e) =>
+              setDiffusion((p) => ({ ...p, steps: Number(e.target.value) }))
+            }
+            className="border border-gray-300 rounded px-2 py-1 h-9 w-full text-center"
+          />
+        </div>
+
       </div>
 
       {/* Beta Min */}
@@ -88,14 +122,17 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
         <input
           type="number"
           value={diffusion.betaMin}
-          onChange={(e) =>
-            setDiffusion((p) => ({ ...p, betaMin: Number(e.target.value) }))
-          }
+          onChange={(e) => {
+            setDiffusion((p) => ({ ...p, betaMin: Number(e.target.value) }));
+            setBetaMinTouched(true);
+          }}
           className={`border rounded px-2 py-1 h-9 w-28 text-center ${
-            isBetaMinValid ? "border-gray-300" : "border-red-500 bg-red-50"
+            betaMinTouched && !isBetaMinValid
+              ? "border-red-500 bg-red-50"
+              : "border-gray-300"
           }`}
         />
-        {!isBetaMinValid && (
+        {betaMinTouched && !isBetaMinValid && (
           <p className="text-xs text-red-600 mt-1">
             Must be between {betaMinRange.min} and {betaMinRange.max}
           </p>
@@ -108,14 +145,17 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
         <input
           type="number"
           value={diffusion.betaMax}
-          onChange={(e) =>
-            setDiffusion((p) => ({ ...p, betaMax: Number(e.target.value) }))
-          }
+          onChange={(e) => {
+            setDiffusion((p) => ({ ...p, betaMax: Number(e.target.value) }));
+            setBetaMaxTouched(true);
+          }}
           className={`border rounded px-2 py-1 h-9 w-28 text-center ${
-            isBetaMaxValid ? "border-gray-300" : "border-red-500 bg-red-50"
+            betaMaxTouched && !isBetaMaxValid
+              ? "border-red-500 bg-red-50"
+              : "border-gray-300"
           }`}
         />
-        {!isBetaMaxValid && (
+        {betaMaxTouched && !isBetaMaxValid && (
           <p className="text-xs text-red-600 mt-1">
             Must be between {betaMaxRange.min} and {betaMaxRange.max}
           </p>

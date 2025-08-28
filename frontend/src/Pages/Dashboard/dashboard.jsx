@@ -35,6 +35,7 @@ export default function Dashboard() {
 
   // Sidebar/UI state
   const [collapsed, setCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // NEW mobile sidebar toggle
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedForDelete, setSelectedForDelete] = useState(null);
   const [viewerImage, setViewerImage] = useState(null);
@@ -192,6 +193,7 @@ export default function Dashboard() {
     (item) => {
       const ui = toUiImage(item);
       switchToImage(ui.id, ui.url, ui.url);
+      setSidebarOpen(false); // close sidebar on mobile after selection
     },
     [switchToImage]
   );
@@ -228,24 +230,53 @@ export default function Dashboard() {
   return (
     <div className="h-screen w-screen overflow-hidden bg-gray-100 text-gray-900">
       {/* Sidebar */}
-      <Sidebar
-        collapsed={collapsed}
-        setCollapsed={setCollapsed}
-        history={history}
-        onSelectItem={handleSelectFromSidebar}
-        onDeleteItem={(item) => {
-          setSelectedForDelete(item);
-          setShowDeleteModal(true);
-        }}
-        onSettings={() => navigate("/settings")}
-        onLogout={handleLogout}
-      />
+<Sidebar
+  collapsed={collapsed}
+  setCollapsed={setCollapsed}
+  history={history}
+  onSelectItem={handleSelectFromSidebar}
+  onDeleteItem={(item) => {
+    setSelectedForDelete(item);
+    setShowDeleteModal(true);
+  }}
+  onSettings={() => navigate("/settings")}
+  onLogout={handleLogout}
+  sidebarOpen={sidebarOpen}         // 👈 NEW
+  setSidebarOpen={setSidebarOpen}   // 👈 NEW
+/>
+
+
 
       {/* Main */}
       <div
-        className="flex flex-col overflow-y-auto h-screen"
-        style={{ marginLeft: collapsed ? "4rem" : "16rem" }}
+        className={`flex flex-col overflow-y-auto h-screen transition-all ${
+          collapsed ? "md:ml-16" : "md:ml-64"
+        }`}
       >
+        {/* Mobile Top Bar */}
+        <div className="flex items-center p-4 bg-white border-b md:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-md bg-gray-100 hover:bg-gray-200"
+          >
+            {/* Hamburger icon */}
+            <svg
+              className="h-6 w-6 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+          <h1 className="ml-4 font-bold text-lg">Dashboard</h1>
+        </div>
+
         <main className="flex flex-col justify-center items-center">
           {!uploadedImage ? (
             <div className="flex-1 flex flex-col items-center justify-center min-h-screen w-2/3">
@@ -282,7 +313,11 @@ export default function Dashboard() {
                 <div className="flex flex-col gap-3">
                   <ImageCard title="Original Image" src={uploadedImage} />
                   <div className="flex justify-center mt-2 gap-3">
-                    <UploadButton onSelect={handleUpload} label="Upload Image" compact />
+                    <UploadButton
+                      onSelect={handleUpload}
+                      label="Upload Image"
+                      compact
+                    />
                     <button
                       onClick={openMnistSelector}
                       className="px-3 py-2 rounded-lg bg-gray-800 text-white text-sm font-bold hover:bg-gray-700"
@@ -297,7 +332,11 @@ export default function Dashboard() {
                   <ImageCard
                     title={
                       mode === "slow"
-                        ? `Diffused Image ${isStreaming ? `(step ${currentStep} / ${totalSteps})` : ""}`
+                        ? `Diffused Image ${
+                            isStreaming
+                              ? `(step ${currentStep} / ${totalSteps})`
+                              : ""
+                          }`
                         : "Diffused Image"
                     }
                     src={diffusedImage}
@@ -369,7 +408,10 @@ export default function Dashboard() {
 
       {/* Image Viewer */}
       {viewerImage && (
-        <ImageViewerModal image={viewerImage} onClose={() => setViewerImage(null)} />
+        <ImageViewerModal
+          image={viewerImage}
+          onClose={() => setViewerImage(null)}
+        />
       )}
 
       {/* 🔥 Analysis Modal */}
@@ -389,7 +431,11 @@ export default function Dashboard() {
             {/* Compact thumbnails */}
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="border rounded-lg bg-white p-2">
-                <img src={uploadedImage} alt="Original" className="w-full h-40 object-contain" />
+                <img
+                  src={uploadedImage}
+                  alt="Original"
+                  className="w-full h-40 object-contain"
+                />
                 <p className="text-center text-sm mt-1">Original</p>
               </div>
               <div className="border rounded-lg bg-white p-2">
@@ -416,8 +462,16 @@ export default function Dashboard() {
 
             {/* Charts */}
             <div className="mt-6">
-              <NoiseChart chartPoints={chartPoints} scrubT={scrubT} setScrubT={setScrubT} />
-              <BetaChart chartPoints={chartPoints} scrubT={scrubT} setScrubT={setScrubT} />
+              <NoiseChart
+                chartPoints={chartPoints}
+                scrubT={scrubT}
+                setScrubT={setScrubT}
+              />
+              <BetaChart
+                chartPoints={chartPoints}
+                scrubT={scrubT}
+                setScrubT={setScrubT}
+              />
             </div>
           </div>
         </div>
@@ -443,14 +497,18 @@ export default function Dashboard() {
 
             {!mnistImages.length ? (
               <>
-                {mnistError && <p className="text-sm text-red-600 mb-3">{mnistError}</p>}
+                {mnistError && (
+                  <p className="text-sm text-red-600 mb-3">{mnistError}</p>
+                )}
                 <div className="grid grid-cols-5 gap-2">
                   {Array.from({ length: 10 }).map((_, d) => (
                     <button
                       key={d}
                       onClick={() => handleChooseMnistDigit(d)}
                       className={`px-3 py-2 border rounded-lg text-sm font-bold ${
-                        mnistDigit === d ? "bg-gray-900 text-white" : "bg-gray-100 hover:bg-gray-200"
+                        mnistDigit === d
+                          ? "bg-gray-900 text-white"
+                          : "bg-gray-100 hover:bg-gray-200"
                       }`}
                       disabled={mnistLoading}
                     >
@@ -458,13 +516,12 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
-                <p className="mt-4 text-xs text-gray-500">
-                  Pick a digit to load 20 sample images from your `/images/digit` endpoint.
-                </p>
               </>
             ) : (
               <>
-                {mnistError && <p className="text-sm text-red-600 mb-3">{mnistError}</p>}
+                {mnistError && (
+                  <p className="text-sm text-red-600 mb-3">{mnistError}</p>
+                )}
                 <div className="grid grid-cols-5 gap-4">
                   {mnistImages.map((img) => (
                     <button
