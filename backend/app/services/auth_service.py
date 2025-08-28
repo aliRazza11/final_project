@@ -1,6 +1,6 @@
-from fastapi import HTTPException, status, Request, WebSocket, WebSocketDisconnect
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.repositories.user_repo import UserRepo
+# app/services/auth_service.py
+from fastapi import HTTPException, status, Request
+from app.repositories.user_repo import UserRepository, UserNotFoundError
 from app.core.security import (
     hash_password,
     verify_password,
@@ -13,17 +13,22 @@ from app.models.user import User
 from sqlalchemy import select
 
 class AuthService:
-    def __init__(self, user_repo: UserRepo):
+    def __init__(self, user_repo: UserRepository):
         self.user_repo = user_repo
 
     async def signup(self, email: str, username: str, password: str):
-        if await self.user_repo.by_email(email):
-            raise HTTPException(status_code=400, detail="Email already registered")
+        try:
+            if await self.user_repo.get_by_email(email):
+                raise HTTPException(status_code=400, detail="Email already registered")
+        except UserNotFoundError:
+            # good, continue with signup
+            pass
+
         user = await self.user_repo.create(email, username, hash_password(password))
         return user
 
     async def login(self, email: str, password: str):
-        user = await self.user_repo.by_email(email)
+        user = await self.user_repo.get_by_email(email)
         if not user or not verify_password(password, user.password_hash):
             raise HTTPException(status_code=401, detail="Invalid credentials")
         return user
@@ -44,7 +49,7 @@ class AuthService:
 
     async def refresh_from_request(self, request: Request):
         user_id = int(get_sub_from_refresh_cookie(request))
-        user = await self.user_repo.by_id(user_id)
+        user = await self.user_repo.get_by_id(user_id)
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
 
@@ -57,4 +62,3 @@ class AuthService:
 
     def verify_password(self, plain: str, hashed: str) -> bool:
         return verify_password(plain, hashed)
-    

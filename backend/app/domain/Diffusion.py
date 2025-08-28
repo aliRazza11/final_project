@@ -1,119 +1,231 @@
+# app/domain/Diffusion.py
 from __future__ import annotations
 import logging
-from typing import Generator, Iterable, Optional, Tuple
-
+from typing import Generator, Tuple
 import numpy as np
-
-from app.domain.ImageProcessor import ImageProcessor
-from app.domain.BetaScheduler import BetaScheduler
 
 logger = logging.getLogger(__name__)
 
 
-def _uint8_from_float01(x: np.ndarray) -> np.ndarray:
-    """Convert float32 [0,1] → uint8 [0,255]."""
-    return (np.clip(x, 0.0, 1.0) * 255.0 + 0.5).astype(np.uint8)
-
-
 def _mix_seed(seed: int, t: int) -> int:
-    """Deterministically mix seed with timestep for per-t RNG."""
+    """
+    Mix a base seed with a timestep `t` to produce a deterministic
+    but unique seed for that specific step.
+
+    This ensures that random noise is reproducible across runs
+    (given the same base seed), but also varies per timestep.
+
+    Args:
+        seed (int): Base random seed.
+        t (int): Current timestep.
+
+    Returns:
+        int: Mixed 32-bit integer seed for timestep `t`.
+    """
     return (seed ^ (t * 0x9E3779B1)) & 0xFFFFFFFF
 
 
 class Diffusion:
     """
-    Forward diffusion utilities for an image. Designed for UI sliders:
-    - fast_diffuse(t): O(1) time per t (no iterative loop)
-    - diffuse_at_t(t): iterative semantics (matches Markov chain)
-    - frames(): generator across t steps (stream to client)
+    Implements the **core forward diffusion process** used in
+    denoising diffusion models.
+
+    - Operates directly on numpy arrays (pure math).
+    - Does not depend on higher-level abstractions like
+      encoders/decoders or schedulers beyond the arrays passed in.
+    - Provides both exact iterative diffusion and closed-form
+      diffusion sampling.
+    - Includes utility functions for generating frames and computing
+      similarity metrics.
+
+    Attributes:
+        x0 (np.ndarray): Original clean input image (normalized to [0, 1]).
+        img_shape (tuple): Shape of the input image.
+        steps (int): Total number of diffusion steps.
+        beta (np.ndarray): Beta schedule values.
+        alpha (np.ndarray): Alpha values (1 - beta).
+        alpha_bar (np.ndarray): Cumulative product of alphas.
+        sqrt_alpha_bar (np.ndarray): Square root of alpha_bar.
+        sqrt_one_minus_alpha_bar (np.ndarray): Square root of (1 - alpha_bar).
+        sqrt_one_minus_beta (np.ndarray): Square root of (1 - beta).
+        _base_seed (int): Base RNG seed for reproducibility.
     """
 
     def __init__(
         self,
-        encoded_img: str,
-        steps: int,
-        beta_start: float,
-        beta_end: float,
-        beta_schedule: str = "linear",
+        x0: np.ndarray,
+        beta: np.ndarray,
+        alpha: np.ndarray,
+        alpha_bar: np.ndarray,
+        sqrt_alpha_bar: np.ndarray,
+        sqrt_one_minus_alpha_bar: np.ndarray,
+        sqrt_one_minus_beta: np.ndarray,
         *,
-        seed: Optional[int] = None,
-        max_side: Optional[int] = None,
+        seed: int,
     ) -> None:
-        if not (1 <= steps <= 1000):
-            raise ValueError("steps must be in [1, 1000]")
+        """
+        Initialize a Diffusion instance.
+
+        Args:
+            x0 (np.ndarray): Input image (normalized float array).
+            beta (np.ndarray): Beta schedule.
+            alpha (np.ndarray): Alpha values (1 - beta).
+            alpha_bar (np.ndarray): Cumulative product of alphas.
+            sqrt_alpha_bar (np.ndarray): Precomputed sqrt(alpha_bar).
+            sqrt_one_minus_alpha_bar (np.ndarray): Precomputed sqrt(1 - alpha_bar).
+            sqrt_one_minus_beta (np.ndarray): Precomputed sqrt(1 - beta).
+            seed (int): Random seed for noise reproducibility.
+        """
+        if not isinstance(x0, np.ndarray):
+            raise TypeError(f"x0 must be a numpy array, got {type(x0)}")
         
-        # Decode (optionally resize for safety/perf)
-        self._ip = ImageProcessor(encoded_img)
-        decoded_img = self._ip.decode_image()  # HxWx3 uint8
-        img = self._ip.resize(decoded_img, max_side=max_side)
-        self.x0 = self._ip.normalize_img(img)
-        self.img_shape = self._ip.get_shape()
+        self.x0 = x0
+        self.img_shape = x0.shape
+        self.steps = len(beta)
 
-        # Build schedule (precomputes all derived arrays)
-        sched = BetaScheduler(steps, beta_schedule, beta_start, beta_end)
-        self.steps = steps
-        self.beta = sched.get_beta()                                  # (T,)
-        self.alpha = sched.get_alpha()                                # (T,)
-        self.alpha_bar = sched.get_alpha_bar()                        # (T,)
-        self.sqrt_alpha_bar = sched.get_all().sqrt_alpha_bar          # (T,)
-        self.sqrt_one_minus_alpha_bar = sched.get_all().sqrt_one_minus_alpha_bar  # (T,)
-        self.sqrt_one_minus_beta = sched.get_all().sqrt_one_minus_beta  # (T,)
+        # Schedule arrays
+        self.beta = beta
+        self.alpha = alpha
+        self.alpha_bar = alpha_bar
+        self.sqrt_alpha_bar = sqrt_alpha_bar
+        self.sqrt_one_minus_alpha_bar = sqrt_one_minus_alpha_bar
+        self.sqrt_one_minus_beta = sqrt_one_minus_beta
 
-        # RNG: default deterministic per process; for stateless calls we derive per-t RNG
-        self._base_seed = int(seed if seed is not None else np.random.SeedSequence().entropy)
+        self._base_seed = seed
+        logger.info(
+            "Diffusion ready: steps=%d, shape=%s, seed=%d",
+            self.steps, self.img_shape, self._base_seed
+        )
 
-        logger.info("Diffusion init: shape=%s, steps=%d, schedule=%s",
-                    self.img_shape, self.steps, beta_schedule)
+    # ---------- Core Math APIs ----------
 
-    # ---------- Public APIs ----------
-
-
-
-    def fast_diffuse_base64(
-        self,
-        t: int,
-        *,
-        format: str = "JPEG",
-        quality: int = 90,
-        data_url: bool = False,
-    ) -> str:
-        arr = self._fast_diffuse(t)
-        if data_url:
-            return ImageProcessor.array_to_data_url(arr, format=format, quality=quality)
-        return ImageProcessor.array_to_base64(arr, format=format, quality=quality)
-
-    def diffuse_at_t(self, t: int) -> np.ndarray:
+    def closed_form_diffusion(self, t: int) -> np.ndarray:
         """
-        Iterative DDPM forward process:
-        x_{i+1} = sqrt(1 - beta_i) * x_i + sqrt(beta_i) * eps_i
-        Recomputes from x0 each call; use for exact chain semantics.
-        """
-        # t = self._clamp_t(t)
-        rng = np.random.default_rng(_mix_seed(self._base_seed, t))  # seed per-t for determinism
-        xt = self.x0
-        for i in range(t + 1):
-            eps = rng.normal(size=self.img_shape, loc=0.0, scale=1.0).astype(np.float32)
-            xt = self.sqrt_one_minus_beta[i] * xt + np.sqrt(self.beta[i], dtype=np.float32) * eps
-        return _uint8_from_float01(xt)
+        Compute the diffused sample at step `t` using the **closed-form formula**.
 
-    def frames(self) -> Generator[Tuple[int, np.ndarray], None, None]:
-        """Stream frames for t=0..T-1 using iterative updates."""
-        rng = np.random.default_rng()
-        xt = self.x0
-        for i in range(self.steps):
+        This is O(1) with respect to the number of steps,
+        because it directly applies the known formula:
+
+            x_t = sqrt(alpha_bar_t) * x0 + sqrt(1 - alpha_bar_t) * noise
+
+        Args:
+            t (int): Timestep index (0 <= t < steps).
+
+        Returns:
+            np.ndarray: Noisy sample x_t at timestep `t`.
+        """
+        if not isinstance(t, int):
+            raise TypeError(f"t must be an integer, got {type(t)}")
+        try:
+            rng = np.random.default_rng(_mix_seed(self._base_seed, t))
             eps = rng.normal(size=self.img_shape, loc=0.0, scale=1.0).astype(np.float32)
-            xt = self.sqrt_one_minus_beta[i] * xt + np.sqrt(self.beta[i], dtype=np.float32) * eps
-            yield i, float(self.beta[i]), _uint8_from_float01(xt)
+            xt = self.sqrt_alpha_bar[t] * self.x0 + self.sqrt_one_minus_alpha_bar[t] * eps
+            return xt
+        except Exception as e:
+            logger.error("Closed-form diffusion failed at t=%d: %s", t, e)
+            raise RuntimeError(f"Closed-form diffusion failed at t={t}: {e}")
+        # return ImageProcessor.uint8_from_float01(xt)
+
+    def iterative_diffusion(self, t: int) -> np.ndarray:
+        """
+        Compute the diffused sample at step `t` by **iteratively applying**
+        the forward diffusion chain from step 0 → t.
+
+        This is slower (O(t)) but exactly mirrors the original process.
+
+        Args:
+            t (int): Timestep index (0 <= t < steps).
+
+        Returns:
+            np.ndarray: Noisy sample x_t at timestep `t`.
+        """
+        if not isinstance(t, int):
+            raise TypeError(f"t must be an integer, got {type(t)}")
+        try:
+            xt = self.x0
+            rng = np.random.default_rng(_mix_seed(self._base_seed, t))
+            eps_list = rng.normal(size=(t+1, *self.img_shape))
+            for i in range(t + 1):
+                # eps = rng.normal(size=self.img_shape, loc=0.0, scale=1.0).astype(np.float32)
+                xt = self.sqrt_one_minus_beta[i] * xt + np.sqrt(self.beta[i]).astype(np.float32) * eps_list[i]
+            return xt
+        except Exception as e:
+            logger.error("Iterative diffusion failed at t=%d: %s", t, e)
+            raise RuntimeError(f"Iterative diffusion failed at t={t}: {e}")
+        # return ImageProcessor.uint8_from_float01(xt)
+
+    def frames(self) -> Generator[Tuple[int, float, np.ndarray], None, None]:
+        """
+        Generate the entire forward diffusion sequence step by step.
+
+        Yields:
+            tuple:
+                - timestep (int): Current step index.
+                - beta (float): Beta value at this step.
+                - xt (np.ndarray): Image array after applying noise at this step.
+
+        Note:
+            This uses a fresh RNG sequence, so it is not deterministic
+            across runs unless you set a global RNG seed before calling.
+        """
+        try:
+            rng = np.random.default_rng()
+            xt = self.x0
+            for i in range(self.steps):
+                eps = rng.normal(size=self.img_shape, loc=0.0, scale=1.0).astype(np.float32)
+                xt = self.sqrt_one_minus_beta[i] * xt + np.sqrt(self.beta[i]).astype(np.float32) * eps
+                # yield i, float(self.beta[i]), ImageProcessor.uint8_from_float01(xt)
+                yield i, float(self.beta[i]), xt
+        except Exception as e:
+            logger.error("Frame generation failed: %s", e)
+            raise RuntimeError(f"Frame generation failed: {e}")
+    
 
     def compute_metrics(self, xt1: np.ndarray, xt0: np.ndarray) -> dict:
-        """Compute degradation metrics between two uint8 images."""
+        """
+        Compute similarity/degradation metrics between two noisy frames.
+
+        Args:
+            xt1 (np.ndarray): First image/frame (uint8 or float).
+            xt0 (np.ndarray): Second image/frame (uint8 or float).
+
+        Returns:
+            dict: Dictionary of metrics, including:
+                - "SSIM": Structural Similarity Index.
+                - "Cosine": Cosine similarity between flattened arrays.
+        """
+
         return self._compute_metrics(xt1, xt0)
         
-
     # ---------- Helpers ----------
     
     def _compute_metrics(self, xt1: np.ndarray, xt0: np.ndarray) -> dict:
+        """
+        Internal helper for computing similarity metrics.
+
+        Implements:
+        - SSIM (manual implementation for structural similarity).
+        - Cosine similarity (vector-based comparison).
+
+        Args:
+            xt1 (np.ndarray): First image.
+            xt0 (np.ndarray): Second image.
+
+        Returns:
+            dict: {"SSIM": float, "Cosine": float}
+        """
         def _ssim_manual(x: np.ndarray, y: np.ndarray, L: int = 255) -> float:
+            """
+            Simplified SSIM (Structural Similarity Index) implementation.
+
+            Args:
+                x (np.ndarray): First image (float or uint8).
+                y (np.ndarray): Second image.
+                L (int, optional): Dynamic range of pixel values. Defaults to 255.
+
+            Returns:
+                float: SSIM score in range [-1, 1], where 1 means identical.
+            """
             # Convert to float
             x = x.astype(np.float64)
             y = y.astype(np.float64)
@@ -131,22 +243,24 @@ class Diffusion:
                 ((mu_x**2 + mu_y**2 + C1) * (sigma_x + sigma_y + C2))
 
         def _cosine_similarity(x: np.ndarray, y: np.ndarray) -> float:
+            """
+            Compute cosine similarity between two arrays.
+
+            Args:
+                x (np.ndarray): First array.
+                y (np.ndarray): Second array.
+
+            Returns:
+                float: Cosine similarity in range [-1, 1].
+            """
             x = x.astype(np.float64).ravel()
             y = y.astype(np.float64).ravel()
             return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
-        
-        return {
-            "SSIM": _ssim_manual(xt0, xt1),
-            "Cosine": _cosine_similarity(xt0, xt1)
-        }
-    
-    def _fast_diffuse(self, t: int) -> np.ndarray:
-        """
-        x_t = sqrt(alpha_bar[t]) * x0 + sqrt(1 - alpha_bar[t]) * eps
-        O(1) time; ideal for UI slider jumping around.
-        """
-        # t = self._clamp_t(t)
-        rng = np.random.default_rng(_mix_seed(self._base_seed, t))
-        eps = rng.normal(size=self.img_shape, loc=0.0, scale=1.0).astype(np.float32)
-        xt = self.sqrt_alpha_bar[t] * self.x0 + self.sqrt_one_minus_alpha_bar[t] * eps
-        return _uint8_from_float01(xt)
+        try:
+            return {
+                "SSIM": _ssim_manual(xt0, xt1),
+                "Cosine": _cosine_similarity(xt0, xt1)
+            }
+        except Exception as e:
+            logger.error("Metric calculation failed: %s", e)
+            raise RuntimeError(f"Metric calculation failed: {e}")

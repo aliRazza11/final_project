@@ -1,3 +1,4 @@
+# app/schemas/diffusion.py
 from typing import Literal, Optional
 from pydantic import BaseModel, Field, field_validator
 
@@ -16,13 +17,6 @@ class DiffuseRequest(BaseModel):
     beta_end: float = Field(0.02, ge=1e-8, le=0.02)
 
     return_data_url: bool = True  # return data URL for easy <img src=...>
-
-    # @field_validator("image_b64")
-    # def not_empty(cls, v: str):
-    #     if not v or len(v) < 16:
-    #         raise ValueError("image_b64 looks invalid/empty")
-    #     return v
-
 
 class DiffuseResponse(BaseModel):
     image: str  # base64 or data URL depending on return_data_url

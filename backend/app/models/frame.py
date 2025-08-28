@@ -5,6 +5,23 @@ from app.db.base import Base
 from datetime import datetime
 
 class ImageFrame(Base):
+    """
+    Database model for storing frames associated with an image.
+
+    Each frame belongs to a parent image (`image_id`) and represents a
+    time step in both local and global coordinates. Raw frame data is
+    stored as binary, along with optional beta value and metrics.
+
+    Attributes:
+        id (int): Primary key.
+        image_id (int): Foreign key referencing `images.id`.
+        local_t (int): Local time index within an image sequence.
+        global_t (int): Global time index across all sequences.
+        frame_data (bytes): Binary-encoded frame (e.g., compressed image).
+        beta (float, optional): Diffusion beta value at this timestep.
+        metrics (dict, optional): JSON-encoded metrics related to the frame.
+        created_at (datetime): Timestamp of record creation.
+    """
     __tablename__ = "image_frames"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

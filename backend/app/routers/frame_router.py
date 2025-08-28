@@ -1,9 +1,9 @@
 # app/routers/frame_router.py
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
-from app.repositories.frame_repo import FrameRepo
-from app.services.frame_service import FrameService
+from app.repositories.image_repo import ImageRepo
+from app.services.image_service import ImageService
 from app.routers.image_router import get_current_user_dep
 from app.models.user import User
 from app.models.image import Image
@@ -25,7 +25,7 @@ async def save_frames(
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    svc = FrameService(FrameRepo(db))
+    svc = ImageService(ImageRepo(db))
 
     # convert from data URL → bytes
     for f in frames:
@@ -43,7 +43,7 @@ async def get_frames(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user_dep),
 ):
-    svc = FrameService(FrameRepo(db))
+    svc = ImageService(ImageRepo(db))
     frames = await svc.get_frames(image_id)
     return [
         {

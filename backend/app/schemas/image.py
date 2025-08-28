@@ -1,5 +1,5 @@
 # app/schemas/image.py
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, conint, Field
 from datetime import datetime
 import base64
 
@@ -9,7 +9,7 @@ class ImageCreate(BaseModel):
     content_type: str
 
 class ImageOut(BaseModel):
-    id: int
+    id: int 
     user_id: int
     filename: str
     content_type: str
@@ -40,3 +40,6 @@ class MnistOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class MnistRequest(BaseModel):
+    digit: conint(ge=0, le=9) = Field(..., description="Digit between 0 and 9")

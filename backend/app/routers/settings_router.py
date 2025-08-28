@@ -1,3 +1,4 @@
+# app/routers/settings_router.py
 from fastapi import APIRouter, Depends, Request, status, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,7 +9,7 @@ from app.schemas.settings import (
     DeleteAccountRequest,
     DeleteAccountResult,
 )
-from app.repositories.user_repo import UserRepo
+from app.repositories.user_repo import UserRepository
 from app.services.auth_service import AuthService
 from app.services.settings_service import SettingsService
 from app.models.user import User
@@ -20,7 +21,7 @@ router = APIRouter(prefix="/settings", tags=["Settings"])
 
 # Dependency to get logged-in user
 async def get_current_user_dep(request: Request, db: AsyncSession = Depends(get_db)) -> User:
-    auth_service = AuthService(UserRepo(db))
+    auth_service = AuthService(UserRepository(db))
     return await auth_service.get_current_user(request)
 
 @router.patch("", response_model=SettingsUpdateResult)
@@ -30,7 +31,7 @@ async def update_settings(
     current_user: User = Depends(get_current_user_dep),
     csrf_ok: None = Depends(verify_csrf),
 ):
-    svc = SettingsService(UserRepo(db), AuthService(UserRepo(db)))
+    svc = SettingsService(UserRepository(db), AuthService(UserRepository(db)))
 
     try:
         _, reauth_required, msg = await svc.update_settings(current_user.id, payload)
@@ -49,7 +50,7 @@ async def delete_account(
     csrf_ok: None = Depends(verify_csrf),
     resp: Response = None,
 ):
-    svc = SettingsService(UserRepo(db), AuthService(UserRepo(db)))
+    svc = SettingsService(UserRepository(db), AuthService(UserRepository(db)))
 
     try:
         msg = await svc.delete_account(current_user.id, payload)

@@ -1,10 +1,9 @@
 from fastapi import FastAPI
 from app.core.cors import add_cors
 from app.core.config import settings
-from app.routers import auth
 from app.db.session import engine
 from sqlalchemy import text
-from app.routers import image_router, diffusion_router, settings_router, frame_router
+from app.routers import auth, image_router, diffusion_router, settings_router, frame_router
 import sys
 import asyncio
 import logging
@@ -12,10 +11,6 @@ import time
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s [%(levelname)s] %(name)s - %(message)s")
-
-
-# if sys.platform.startswith("win"):
-#     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 logging.getLogger(settings.APP_NAME)
 
