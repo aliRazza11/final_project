@@ -45,7 +45,7 @@ async def signup(payload: UserCreate, resp: Response, db: AsyncSession = Depends
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         logging.exception("Unexpected error during signup")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="AYOYOOOO")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post("/login", response_model=UserRead)
@@ -66,6 +66,7 @@ async def login(payload: UserLogin, resp: Response, db: AsyncSession = Depends(g
         UserRead: Public user details (id, username, email).
     """
     try:
+        print("yes")
         svc = AuthService(UserRepository(db))
         user = await svc.login(payload.email, payload.password)
         access, refresh = await svc.issue_tokens(user.id)

@@ -13,7 +13,9 @@ TRAIN_LABELS = r"mnist\train-labels-idx1-ubyte"
 DB_CONFIG = {
     "user": "root",
     "password": "1234",
-    "host": "127.0.0.1",
+    "host": "db",
+    # "host": "127.0.0.1",
+
     "database": "diffusiondb",
 }
 

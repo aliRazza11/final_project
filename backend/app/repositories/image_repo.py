@@ -17,20 +17,6 @@ class ImageNotFoundError(ImageRepoError):
     """Raised when no image is found for a given criteria."""
 
 
-class MnistRepoError(Exception):
-    """Base exception for MNIST repository errors."""
-
-class MnistNotFoundError(MnistRepoError):
-    """Raised when no MNIST samples are found for a given digit."""
-
-class FrameRepoError(Exception):
-    """Base exception for frame repository errors."""
-
-
-class FrameNotFoundError(FrameRepoError):
-    """Raised when no frame is found for a given image ID."""
-
-
 class ImageRepo:
     """
     Repository for `Image` entities.
@@ -153,10 +139,10 @@ class ImageRepo:
             )
             samples = result.scalars().all()
             if not samples:
-                raise MnistNotFoundError(f"No MNIST samples found for digit={digit}")
+                raise ImageNotFoundError(f"No MNIST samples found for digit={digit}")
             return samples
         except SQLAlchemyError as e:
-            raise MnistRepoError("Failed to fetch MNIST samples from the database.") from e
+            raise ImageRepoError("Failed to fetch MNIST samples from the database.") from e
         
 
     """
@@ -211,10 +197,10 @@ class ImageRepo:
             return frame
         except IntegrityError as e:
             await self.db.rollback()
-            raise FrameRepoError("Failed to create frame due to integrity error.") from e
+            raise ImageNotFoundError("Failed to create frame due to integrity error.") from e
         except SQLAlchemyError as e:
             await self.db.rollback()
-            raise FrameRepoError("Failed to create frame due to integrity error.") from e
+            raise ImageRepoError("Failed to create frame due to integrity error.") from e
 
     async def overwrite_for_image(self, image_id: int, frames: List[dict]) -> None:
         """
@@ -250,7 +236,7 @@ class ImageRepo:
             await self.db.commit()
         except SQLAlchemyError as e:
             await self.db.rollback()
-            raise FrameRepoError("Failed to overwrite frames due to database error.") from e
+            raise ImageRepoError("Failed to overwrite frames due to database error.") from e
 
     async def list_for_image(self, image_id: int) -> list[ImageFrame]:
         """
@@ -270,4 +256,4 @@ class ImageRepo:
                 )
             return res.scalars().all()
         except SQLAlchemyError as e:
-            raise FrameRepoError("Failed to list frames due to database error.") from e
+            raise ImageRepoError("Failed to list frames due to database error.") from e

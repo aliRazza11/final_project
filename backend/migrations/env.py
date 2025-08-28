@@ -4,10 +4,14 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
-from app.db.base import Base  # import your Base where models are registered
+from app.db.base import Base  # your SQLAlchemy Base
+from app.core.config import settings  # <-- import your Pydantic settings
 
 # Alembic Config object
 config = context.config
+
+# ✅ Override sqlalchemy.url from your .env / settings
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 # Logging setup
 if config.config_file_name is not None:
