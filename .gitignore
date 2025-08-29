@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+dist/
+
+# Virtual envs
+.venv/
+env/
+venv/
+
+# Environment files
+.env
+*.env
+
+# Docker
+db_data/
