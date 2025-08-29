@@ -32,6 +32,7 @@
 You can also spin up the whole stack using Docker Compose:
 
    docker compose up --build
+   docker compose exec backend alembic upgrade head
 
 - Frontend → http://localhost:5173  
 - Backend → http://localhost:8000  

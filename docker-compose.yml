@@ -16,7 +16,7 @@ services:
       APP_NAME: Forward Diffusion API
       ENV: docker
       FRONTEND_ORIGIN: http://localhost:5173
-      JWT_SECRET: hello
+      JWT_SECRET: fasfhaskfhkas!kjfkdsanfdfasfasf
       JWT_ALG: HS256
       ACCESS_TOKEN_TTL_MIN: 100
       REFRESH_TOKEN_TTL_DAYS: 7
@@ -26,12 +26,14 @@ services:
 
   frontend:
     build: ./frontend
+    environment:
+      - VITE_API_URL=http://backend:8000
     container_name: react_frontend
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app       # hot reload for code
-      - /app/node_modules     # prevents overwriting node_modules
+      - ./frontend:/app     
+      - /app/node_modules    
     depends_on:
       - backend
 
