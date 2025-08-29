@@ -16,8 +16,8 @@ export default function Sidebar({
   onDeleteItem,
   onSettings,
   onLogout,
-  sidebarOpen,     // from Dashboard
-  setSidebarOpen,  // from Dashboard
+  sidebarOpen,     
+  setSidebarOpen,  
 }) {
   const navigate = useNavigate();
 
@@ -29,10 +29,10 @@ export default function Sidebar({
         transition-transform duration-300
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
         ${collapsed ? "md:w-16" : "md:w-64"} w-64
-        overflow-x-hidden   /* 👈 fix horizontal scroll */
+        overflow-x-hidden   
       `}
     >
-      {/* Top bar */}
+   
       <div className="flex items-center justify-between p-4 border-b border-zinc-700/50">
         {!collapsed && (
           <span className="text-lg font-bold hidden md:inline">
@@ -40,7 +40,7 @@ export default function Sidebar({
           </span>
         )}
         <div className="flex gap-2">
-          {/* Collapse toggle (desktop only) */}
+     
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="hidden md:block p-1 hover:bg-white/10 rounded"
@@ -48,7 +48,6 @@ export default function Sidebar({
             <MenuIcon size={20} />
           </button>
 
-          {/* Close button (mobile only) */}
           <button
             onClick={() => setSidebarOpen(false)}
             className="md:hidden p-1 hover:bg-white/10 rounded"
@@ -58,7 +57,7 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* History list */}
+
       <nav className="flex-1 p-2 space-y-2 md:overflow-y-auto">
         {history.map((item) => (
           <div
@@ -73,7 +72,7 @@ export default function Sidebar({
               {item.name}
             </span>
             <div className="flex gap-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition">
-              {/* Download */}
+    
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -84,7 +83,6 @@ export default function Sidebar({
                 <Download size={16} />
               </button>
 
-              {/* Delete */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -99,7 +97,7 @@ export default function Sidebar({
         ))}
       </nav>
 
-      {/* Bottom actions */}
+  
       <div className="p-2 border-t border-zinc-700/50 flex flex-col gap-1 mt-auto">
         <button
           onClick={() => {

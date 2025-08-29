@@ -4,21 +4,18 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
   const [editingSteps, setEditingSteps] = useState(false);
   const [tempSteps, setTempSteps] = useState(diffusion.steps);
 
-  // Track if fields were touched
   const [betaMinTouched, setBetaMinTouched] = useState(false);
   const [betaMaxTouched, setBetaMaxTouched] = useState(false);
 
-  // validation ranges from backend schema
   const betaMinRange = { min: 0.001, max: 0.01 };
   const betaMaxRange = { min: 0.001, max: 0.02 };
 
-  // 🔥 Ensure defaults when component mounts
   useEffect(() => {
     setDiffusion((prev) => ({
       ...prev,
       betaMin: prev.betaMin ?? betaMinRange.min,
       betaMax: prev.betaMax ?? betaMaxRange.max,
-      steps: prev.steps ?? 100, // sensible default
+      steps: prev.steps ?? 100,
       schedule: prev.schedule ?? "linear",
     }));
   }, []);
@@ -33,7 +30,6 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
 
   return (
     <div className="flex flex-wrap justify-center items-start gap-4 md:gap-8 lg:gap-16 text-center">
-      {/* Mode */}
       <div className="flex flex-col items-center">
         <label className="text-sm font-medium text-gray-700 mb-1">Mode</label>
         <select
@@ -46,11 +42,9 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
         </select>
       </div>
 
-      {/* Steps */}
       <div className="flex flex-col items-center">
         <label className="text-sm font-medium text-gray-700 mb-1">Steps</label>
 
-        {/* Desktop view: slider + inline edit */}
         <div className="hidden sm:flex items-center gap-3">
           <input
             type="range"
@@ -100,7 +94,7 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
           )}
         </div>
 
-        {/* Mobile view: just number input */}
+    
         <div className="sm:hidden w-24">
           <input
             type="number"
@@ -116,7 +110,7 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
 
       </div>
 
-      {/* Beta Min */}
+ 
       <div className="flex flex-col items-center">
         <label className="text-sm font-medium text-gray-700 mb-1">Beta Min</label>
         <input
@@ -139,7 +133,7 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
         )}
       </div>
 
-      {/* Beta Max */}
+   
       <div className="flex flex-col items-center">
         <label className="text-sm font-medium text-gray-700 mb-1">Beta Max</label>
         <input
@@ -162,7 +156,6 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
         )}
       </div>
 
-      {/* Schedule */}
       <div className="flex flex-col items-center">
         <label className="text-sm font-medium text-gray-700 mb-1">Schedule</label>
         <select

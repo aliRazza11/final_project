@@ -22,7 +22,7 @@ import { api } from "../../services/api";
 import { toUiImage } from "../../utils/image";
 import { centerThumb } from "../../utils/timeline";
 
-// NEW slim helpers
+
 import useImageSwitch from "../../hooks/useImageSwitch";
 import useUploadImage from "../../hooks/useUploadImage";
 import useDeleteImage from "../../hooks/useDeleteImage";
@@ -32,23 +32,18 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const preloaded = location.state?.image;
-
-  // Sidebar/UI state
   const [collapsed, setCollapsed] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false); // NEW mobile sidebar toggle
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedForDelete, setSelectedForDelete] = useState(null);
   const [viewerImage, setViewerImage] = useState(null);
-
   const [analysisAvailable, setAnalysisAvailable] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
-
-  // Active image session
   const [uploadedImage, setUploadedImage] = useState(null);
   const [uploadedImageDataUrl, setUploadedImageDataUrl] = useState(null);
   const [currentImageKey, setCurrentImageKey] = useState(null);
 
-  // Timeline storage
+
   const {
     frames,
     setFrames,
@@ -66,7 +61,6 @@ export default function Dashboard() {
 
   const chartPoints = useChartPoints(frames);
 
-  // Diffusion orchestration
   const {
     diffusion,
     setDiffusion,
@@ -94,10 +88,8 @@ export default function Dashboard() {
     tOffsetRef,
   });
 
-  // History
   const { history, refreshHistory, removeById, addOrUpdate } = useImageHistory();
 
-  // MNIST
   const {
     showMnistSelector,
     mnistDigit,
@@ -120,7 +112,7 @@ export default function Dashboard() {
     },
   });
 
-  // Image switching / upload / delete
+ 
   const { switchToImage } = useImageSwitch({
     wsRef,
     setStreamError,
@@ -163,7 +155,7 @@ export default function Dashboard() {
 
   const canDiffuse = Boolean(uploadedImageDataUrl);
 
-  // Preload
+ 
   useEffect(() => {
     if (!preloaded) return;
     (async () => {
@@ -172,7 +164,6 @@ export default function Dashboard() {
     })();
   }, [preloaded]);
 
-  // Cleanup WS
   useEffect(
     () => () => {
       try {
@@ -182,7 +173,7 @@ export default function Dashboard() {
     [wsRef]
   );
 
-  // Update preview when scrubbing
+
   useEffect(() => {
     if (scrubT == null) return;
     const f = frames.find((x) => x.globalT === scrubT);
@@ -193,7 +184,7 @@ export default function Dashboard() {
     (item) => {
       const ui = toUiImage(item);
       switchToImage(ui.id, ui.url, ui.url);
-      setSidebarOpen(false); // close sidebar on mobile after selection
+      setSidebarOpen(false); 
     },
     [switchToImage]
   );
@@ -229,7 +220,7 @@ export default function Dashboard() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-gray-100 text-gray-900">
-      {/* Sidebar */}
+
 <Sidebar
   collapsed={collapsed}
   setCollapsed={setCollapsed}
@@ -241,8 +232,8 @@ export default function Dashboard() {
   }}
   onSettings={() => navigate("/settings")}
   onLogout={handleLogout}
-  sidebarOpen={sidebarOpen}         // 👈 NEW
-  setSidebarOpen={setSidebarOpen}   // 👈 NEW
+  sidebarOpen={sidebarOpen}         
+  setSidebarOpen={setSidebarOpen}   
 />
 
 
@@ -394,7 +385,6 @@ export default function Dashboard() {
         </main>
       </div>
 
-      {/* Delete confirmation */}
       {showDeleteModal && (
         <DeleteModal
           file={selectedForDelete}
@@ -406,7 +396,7 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Image Viewer */}
+  
       {viewerImage && (
         <ImageViewerModal
           image={viewerImage}
@@ -414,7 +404,7 @@ export default function Dashboard() {
         />
       )}
 
-      {/* 🔥 Analysis Modal */}
+ 
       {showAnalysis && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto p-6">
@@ -428,7 +418,7 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Compact thumbnails */}
+
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="border rounded-lg bg-white p-2">
                 <img
@@ -449,7 +439,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Timeline */}
+
             <TimelineStrip
               frames={frames}
               scrubT={scrubT}
@@ -460,7 +450,7 @@ export default function Dashboard() {
               onCenterClick={onCenterThumb}
             />
 
-            {/* Charts */}
+   
             <div className="mt-6">
               <NoiseChart
                 chartPoints={chartPoints}
@@ -477,7 +467,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* 🧠 MNIST Selector Modal */}
+  
       {showMnistSelector && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto p-6">

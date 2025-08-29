@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");   // ✅ new state
+  const [username, setUsername] = useState("");  
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,6 +16,16 @@ export default function SignupPage() {
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return;
+    }
+
+    if (password.length > 32) {
+      setError("Password cannot exceed 32 characters");
       return;
     }
 
@@ -57,7 +67,6 @@ export default function SignupPage() {
             <p className="text-red-500 text-center font-medium">{error}</p>
           )}
 
-          {/* ✅ Username field */}
           <div>
             <label className="block text-gray-700 font-medium mb-2 text-base">
               Username
@@ -95,6 +104,8 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter password"
+              minLength={8}
+              maxLength={32}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#233975ff] text-base"
               required
             />
@@ -109,6 +120,8 @@ export default function SignupPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm password"
+              minLength={8}
+              maxLength={32}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#233975ff] text-base"
               required
             />

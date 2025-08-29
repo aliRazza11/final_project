@@ -19,17 +19,16 @@ export default function LoginPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }), // FastAPI login expects email + password
-        credentials: "include", // important so cookies are stored
+        body: JSON.stringify({ email, password }), 
+        credentials: "include",
       });
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.detail || "Login failed");
+        throw new Error(" Invalid username / Password" || errData.detail);
       }
 
-      // ✅ Cookies with tokens are automatically stored by the browser
-      navigate("/dashboard"); // redirect after success
+      navigate("/dashboard"); 
     } catch (err) {
       setError(err.message);
     } finally {

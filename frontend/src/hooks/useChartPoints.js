@@ -1,9 +1,6 @@
-// src/hooks/useChartPoints.js
 import { useMemo } from "react";
 
-/**
- * Derives chart-ready points from timeline frames.
- */
+
 export default function useChartPoints(frames) {
   return useMemo(
     () =>

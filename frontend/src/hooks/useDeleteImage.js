@@ -1,9 +1,6 @@
-// src/hooks/useDeleteImage.js
 import { useCallback } from "react";
 
-/**
- * Delete handler with optimistic sidebar removal and timeline cleanup.
- */
+
 export default function useDeleteImage({
   api,
   currentImageKey,

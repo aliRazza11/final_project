@@ -1,4 +1,3 @@
-// src/hooks/usePerImageTimeline.js
 import { useRef, useState, useLayoutEffect, useCallback } from "react";
 import axios from "axios";
 
@@ -11,7 +10,7 @@ export default function usePerImageTimeline(apiBase = "http://localhost:8000") {
   const timelineRef = useRef(null);
   const timelineScrollRef = useRef(0);
 
-  // --- API helpers ---
+ 
   const saveFramesForImage = useCallback(
     async (imageId, framesArr) => {
       if (!imageId) return;
@@ -45,7 +44,6 @@ export default function usePerImageTimeline(apiBase = "http://localhost:8000") {
   );
 
 
-  // --- Scroll state (same as before) ---
   useLayoutEffect(() => {
     const el = timelineRef.current;
     if (el) el.scrollLeft = timelineScrollRef.current;

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Autoplay, Navigation } from "swiper/modules";
 
-// Swiper styles
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
@@ -11,13 +10,18 @@ import sample1 from "../../assets/10.jpg";
 import sample2 from "../../assets/50.jpg";
 import sample3 from "../../assets/150.jpg";
 
+import sample4 from "../../assets/angel.jpg";
+import sample5 from "../../assets/angel1.jpg";
+import sample6 from "../../assets/angel3.jpg";
+
+
+
 export default function HomePage() {
   const [showChoice, setShowChoice] = useState(false);
 
   const slides = [
     [sample1, sample2, sample3],
-    [sample1, sample2, sample3],
-    [sample1, sample2, sample3],
+    [sample4, sample5, sample6],
   ];
 
   const handleTryNowClick = () => setShowChoice(true);
@@ -29,7 +33,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 relative">
-      {/* Left side: Swiper carousel */}
+
       <div className="md:w-2/3 flex items-center justify-center bg-gray-900 p-4">
         <Swiper
           modules={[Pagination, Autoplay, Navigation]}
@@ -55,7 +59,7 @@ export default function HomePage() {
                     />
                   </div>
                 ))}
-                <div className="absolute inset-0 flex items-end justify-center pointer-events-none">
+                <div className="absolute inset-0 flex items-end justify-center pointer-events-none mb-2">
                   <h2 className="text-white text-3xl md:text-6xl font-extrabold text-center leading-tight drop-shadow-2xl tracking-tight">
                     Every <span className="text-red-500">Pixel</span> Matters
                   </h2>
@@ -70,13 +74,14 @@ export default function HomePage() {
       {/* Right side */}
       <div className="md:w-1/3 flex flex-col justify-center p-6 md:p-12 space-y-32">
         <h1 className="text-2xl md:text-4xl font-bold text-gray-900">
-          Bring Your Images to Life
+          Breathing Life into Pixels
         </h1>
-        <p className="text-gray-700 text-base md:text-lg">
-          Forward Image Diffusion allows you to easily enhance and slightly
-          diffuse your images, creating a smooth, artistic look. Perfect for
-          designers, photographers, and creators.
-        </p>
+ <p className="text-gray-700 text-base md:text-lg leading-relaxed md:leading-loose">
+  Forward Image Diffusion allows you to easily enhance and slightly
+  diffuse your images, creating a smooth, artistic look. Perfect for
+  designers, photographers, and creators.
+</p>
+
         <button
           className="bg-gray-900 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg  text-base md:text-lg w-40"
           onClick={handleTryNowClick}

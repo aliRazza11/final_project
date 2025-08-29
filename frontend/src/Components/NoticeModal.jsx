@@ -10,7 +10,6 @@ export default function NoticeModal({ open, title = "Notice", message, onClose }
         onClick={onClose}
         aria-hidden="true"
       />
-      {/* Modal */}
       <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white shadow-xl border p-5">
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         <p className="mt-2 text-sm text-gray-600">{message}</p>

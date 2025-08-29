@@ -1,10 +1,6 @@
-// src/hooks/useImageSwitch.js
 import { useCallback } from "react";
 
-/**
- * Handles switching the active image, canceling any running WS stream,
- * persisting/restoring per-image timelines, and restoring preview.
- */
+
 export default function useImageSwitch({
   wsRef,
   setStreamError,
@@ -25,7 +21,7 @@ export default function useImageSwitch({
 }) {
   const switchToImage = useCallback(
     async (key, imageUrl, dataUrl) => {
-      // stop any running stream
+    
       try {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({ action: "cancel" }));
@@ -35,7 +31,7 @@ export default function useImageSwitch({
 
       setStreamError("");
 
-      // persist current image's frames
+ 
       if (currentImageKey) await saveFramesForImage(currentImageKey, frames);
 
       // set active image

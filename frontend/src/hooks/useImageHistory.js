@@ -6,14 +6,14 @@ export default function useImageHistory() {
   const [history, setHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const seqRef = useRef(0); // prevents race conditions
+  const seqRef = useRef(0); 
 
-  // Replace the whole list
+ 
   const replaceAll = useCallback((items) => {
     setHistory(Array.isArray(items) ? items : []);
   }, []);
 
-  // Add or update a single item
+ 
   const addOrUpdate = useCallback((item) => {
     setHistory((prev) => {
       const idx = prev.findIndex((x) => x.id === item.id);
@@ -24,12 +24,12 @@ export default function useImageHistory() {
     });
   }, []);
 
-  // Remove by ID
+
   const removeById = useCallback((id) => {
     setHistory((prev) => prev.filter((x) => x.id !== id));
   }, []);
 
-  // Refresh from server
+
   const refreshHistory = useCallback(async () => {
     const mySeq = ++seqRef.current;
     setIsLoading(true);
@@ -50,7 +50,7 @@ export default function useImageHistory() {
     }
   }, [replaceAll]);
 
-  // Initial load
+
   useEffect(() => {
     refreshHistory();
   }, [refreshHistory]);

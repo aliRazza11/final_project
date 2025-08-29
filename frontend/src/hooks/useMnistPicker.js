@@ -1,15 +1,8 @@
-// src/hooks/useMnistPicker.js
 import { useCallback, useState } from "react";
 import { base64ToPngFile } from "../utils/file";
 import { toUiImage } from "../utils/image";
 
-/**
- * Handles the 2-step MNIST modal UX and picking/uploading a sample.
- *
- * Expects an `api` with:
- *   - api.images.byDigit(d)
- *   - api.images.upload(file)
- */
+
 export default function useMnistPicker({ api, onAfterUpload }) {
   const [showMnistSelector, setShowMnistSelector] = useState(false);
   const [mnistDigit, setMnistDigit] = useState(null);

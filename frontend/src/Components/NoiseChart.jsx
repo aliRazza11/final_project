@@ -1,4 +1,3 @@
-// src/Components/NoiseChart.jsx
 import {
   ResponsiveContainer,
   LineChart,

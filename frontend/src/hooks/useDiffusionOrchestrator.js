@@ -1,19 +1,14 @@
-// src/hooks/useDiffusionOrchestrator.js
 import { useCallback, useMemo, useRef, useState } from "react";
 import useDiffusionStream from "../hooks/useDiffusionStream";
 import { clamp } from "../utils/image";
 
-/**
- * Orchestrates fast/slow diffusion runs.
- * Handles timeline reset, streaming state, persistence via /frames API.
- */
 export default function useDiffusionOrchestrator({
   api,
   uploadedImageDataUrl,
-  currentImageKey,          // should be imageId from backend
+  currentImageKey,          
   frames,
   setFrames,
-  saveFramesForImage,       // calls POST /frames/:imageId
+  saveFramesForImage,      
   tOffsetRef,
 }) {
   // Diffusion config + view
@@ -26,13 +21,13 @@ export default function useDiffusionOrchestrator({
   });
   const [mode, setMode] = useState("slow");
 
-  // Streaming state
+
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [streamError, setStreamError] = useState("");
   const [followStream, setFollowStream] = useState(true);
 
-  // Attach to WS/REST streamer
+
   const { fastDiffuse, slowDiffuse, cancel: cancelStream, wsRef } = useDiffusionStream({ api });
 
   const totalSteps = useMemo(
@@ -74,7 +69,7 @@ export default function useDiffusionOrchestrator({
       return;
     }
 
-    // --- Slow (WebSocket) ---
+
     await resetTimelineForActiveImage();
 
     setStreamError("");
@@ -87,9 +82,9 @@ export default function useDiffusionOrchestrator({
     slowDiffuse({
       uploadedImageDataUrl,
       diffusion,
-      imageId: currentImageKey,       // ✅ pass DB id
+      imageId: currentImageKey,     
       tOffset: nextOffset,
-      saveFramesForImage,             // ✅ backend persistence
+      saveFramesForImage,          
       onStart: () => {},
       onFrame: async (frame) => {
         if (!frame.image) return;
@@ -130,7 +125,7 @@ export default function useDiffusionOrchestrator({
   ]);
 
   return {
-    // outward state
+
     diffusion,
     setDiffusion,
     mode,
@@ -145,11 +140,10 @@ export default function useDiffusionOrchestrator({
     diffusedImage,
     setDiffusedImage,
 
-    // actions
+
     diffuse,
     cancelStream,
 
-    // ws handle
     wsRef,
   };
 }
