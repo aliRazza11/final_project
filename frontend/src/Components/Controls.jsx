@@ -4,32 +4,30 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
   const [editingSteps, setEditingSteps] = useState(false);
   const [tempSteps, setTempSteps] = useState(diffusion.steps);
 
-  const [betaMinTouched, setBetaMinTouched] = useState(false);
-  const [betaMaxTouched, setBetaMaxTouched] = useState(false);
-
-  const betaMinRange = { min: 0.001, max: 0.01 };
-  const betaMaxRange = { min: 0.001, max: 0.02 };
+  // Both betaMin & betaMax share same limits
+  const betaRange = { min: 0.0001, max: 1, defaultMin: 0.001, defaultMax: 0.02 };
 
   useEffect(() => {
     setDiffusion((prev) => ({
       ...prev,
-      betaMin: prev.betaMin ?? betaMinRange.min,
-      betaMax: prev.betaMax ?? betaMaxRange.max,
+      betaMin: prev.betaMin ?? betaRange.defaultMin,
+      betaMax: prev.betaMax ?? betaRange.defaultMax,
       steps: prev.steps ?? 100,
       schedule: prev.schedule ?? "linear",
     }));
   }, []);
 
-  const isBetaMinValid =
-    diffusion.betaMin >= betaMinRange.min &&
-    diffusion.betaMin <= betaMinRange.max;
-
-  const isBetaMaxValid =
-    diffusion.betaMax >= betaMaxRange.min &&
-    diffusion.betaMax <= betaMaxRange.max;
+  // clamp helper
+  const clamp = (val, min, max, fallback) => {
+    if (Number.isNaN(val)) return fallback;
+    if (val < min) return fallback;
+    if (val > max) return fallback;
+    return val;
+  };
 
   return (
     <div className="flex flex-wrap justify-center items-start gap-4 md:gap-8 lg:gap-16 text-center">
+      {/* Mode */}
       <div className="flex flex-col items-center">
         <label className="text-sm font-medium text-gray-700 mb-1">Mode</label>
         <select
@@ -42,6 +40,7 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
         </select>
       </div>
 
+      {/* Steps */}
       <div className="flex flex-col items-center">
         <label className="text-sm font-medium text-gray-700 mb-1">Steps</label>
 
@@ -94,7 +93,6 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
           )}
         </div>
 
-    
         <div className="sm:hidden w-24">
           <input
             type="number"
@@ -107,55 +105,51 @@ export default function Controls({ diffusion, setDiffusion, mode, setMode }) {
             className="border border-gray-300 rounded px-2 py-1 h-9 w-full text-center"
           />
         </div>
-
       </div>
 
- 
+      {/* Beta Min */}
       <div className="flex flex-col items-center">
         <label className="text-sm font-medium text-gray-700 mb-1">Beta Min</label>
         <input
           type="number"
+          step="0.0001"
           value={diffusion.betaMin}
-          onChange={(e) => {
-            setDiffusion((p) => ({ ...p, betaMin: Number(e.target.value) }));
-            setBetaMinTouched(true);
+          onBlur={(e) => {
+            const val = clamp(Number(e.target.value), betaRange.min, betaRange.max, betaRange.defaultMin);
+            setDiffusion((p) => ({ ...p, betaMin: val }));
           }}
-          className={`border rounded px-2 py-1 h-9 w-28 text-center ${
-            betaMinTouched && !isBetaMinValid
-              ? "border-red-500 bg-red-50"
-              : "border-gray-300"
-          }`}
+          onChange={(e) =>
+            setDiffusion((p) => ({ ...p, betaMin: Number(e.target.value) }))
+          }
+          className="border border-gray-300 rounded px-2 py-1 h-9 w-28 text-center"
         />
-        {betaMinTouched && !isBetaMinValid && (
-          <p className="text-xs text-red-600 mt-1">
-            Must be between {betaMinRange.min} and {betaMinRange.max}
-          </p>
-        )}
+        <p className="text-xs text-gray-500 mt-1">
+          Range {betaRange.min} – {betaRange.max}
+        </p>
       </div>
 
-   
+      {/* Beta Max */}
       <div className="flex flex-col items-center">
         <label className="text-sm font-medium text-gray-700 mb-1">Beta Max</label>
         <input
           type="number"
+          step="0.0001"
           value={diffusion.betaMax}
-          onChange={(e) => {
-            setDiffusion((p) => ({ ...p, betaMax: Number(e.target.value) }));
-            setBetaMaxTouched(true);
+          onBlur={(e) => {
+            const val = clamp(Number(e.target.value), betaRange.min, betaRange.max, betaRange.defaultMax);
+            setDiffusion((p) => ({ ...p, betaMax: val }));
           }}
-          className={`border rounded px-2 py-1 h-9 w-28 text-center ${
-            betaMaxTouched && !isBetaMaxValid
-              ? "border-red-500 bg-red-50"
-              : "border-gray-300"
-          }`}
+          onChange={(e) =>
+            setDiffusion((p) => ({ ...p, betaMax: Number(e.target.value) }))
+          }
+          className="border border-gray-300 rounded px-2 py-1 h-9 w-28 text-center"
         />
-        {betaMaxTouched && !isBetaMaxValid && (
-          <p className="text-xs text-red-600 mt-1">
-            Must be between {betaMaxRange.min} and {betaMaxRange.max}
-          </p>
-        )}
+        <p className="text-xs text-gray-500 mt-1">
+          Range {betaRange.min} – {betaRange.max}
+        </p>
       </div>
 
+      {/* Schedule */}
       <div className="flex flex-col items-center">
         <label className="text-sm font-medium text-gray-700 mb-1">Schedule</label>
         <select

@@ -1,12 +1,35 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState(""); // your backend expects `email`, not username
+  const [email, setEmail] = useState(""); 
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+ useEffect(() => {
+  (async () => {
+    try {
+      const res = await fetch("http://localhost:8000/auth/me", {
+        credentials: "include",
+      });
+      if (res.ok) {
+        console.log("Already logged in, clearing session");
+        await fetch("http://localhost:8000/auth/logout", {
+          method: "POST",
+          credentials: "include",
+        });
+        localStorage.removeItem("token");
+        sessionStorage.removeItem("token");
+      }
+    } catch (err) {
+      console.error("Error checking session:", err);
+    }
+  })();
+}, []);
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -25,10 +48,10 @@ export default function LoginPage() {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(" Invalid username / Password" || errData.detail);
+        throw new Error("Invalid username / Password" || errData.detail);
       }
 
-      navigate("/dashboard"); 
+      navigate("/dashboard");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -85,26 +108,6 @@ export default function LoginPage() {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
-
-        <p className="text-center text-gray-500 mt-6 text-base">
-          Not a member?{" "}
-          <button
-            onClick={() => navigate("/signup")}
-            className="text-[#233975ff] hover:underline"
-          >
-            Sign up
-          </button>
-        </p>
-
-        <p className="text-center text-gray-500 mt-4 text-base">
-          Back to{" "}
-          <button
-            onClick={() => navigate("/")}
-            className="text-[#233975ff] hover:underline"
-          >
-            Homepage
-          </button>
-        </p>
       </div>
     </div>
   );
